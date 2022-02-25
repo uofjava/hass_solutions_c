@@ -1,0 +1,9 @@
+{
+    "chip_haas1000": {
+        "serialport": "COM7",
+        "baudrate": "1500000",
+        "binfile": [
+            "D:\\AliosThings\\hass100\\c_project\\solutions\\PL_500_iot\\out\\PL_500_iot@haas100.bin"
+        ]
+    }
+}
