@@ -177,6 +177,15 @@ int32_t demo_send_delete_desred_requset(void *dm_handle)
     return aiot_dm_send(dm_handle, &msg);
 }
 
+/**
+ * @brief 获取三菱M地址对应的值
+ * 
+ * @param maddr 
+ * @return int32_t 
+ */
+int32_t getMXXXValue(uint16_t *recv int maddr){
+    printf()
+}
 
 int al_iot_main(int argc, char *argv[])
 {
@@ -280,7 +289,7 @@ int al_iot_main(int argc, char *argv[])
             /* show message data */
             // printf("[%s] %d recv message : ", "al_iot:", rev_size);
             register_buf = (uint16_t *)message_buf;
-
+            getMXXXValue(register_buf,1);
             char *send_alio_data = (char *)calloc(1000,sizeof(char));
             strcat(send_alio_data,"{");
             for (i = 0; i < rev_size /2; i++) {
@@ -288,6 +297,7 @@ int al_iot_main(int argc, char *argv[])
                 sprintf(d,"\"%d\": %d,",i,register_buf[i]);
                 strcat(send_alio_data,d);
             }
+
             // 添加上下气缸报警
             char d [10];
             sprintf(d,"\"25\": %d,",1);

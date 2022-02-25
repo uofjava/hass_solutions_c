@@ -120,8 +120,6 @@ int pl_500_modbus_main(int argc, char *argv[])
             status = aos_queue_send(&queue_handle, (void *)message_buf, sizeof(message_buf));
             if (status != 0) {
                 printf("[%s]send buf queue error\r\n", "pl_500_modbus ");
-            }else{
-                printf("[%s]send buf queue sucessful\r\n", "pl_500_modbus ");
             }
             status = MB_SUCCESS;
         }
