@@ -16,14 +16,20 @@ type: solution                                      # <必选项> 组件类型�
 depends:
   - init: master
   - cli: master
-  - osal_aos: master      #消息队列
-  - mbmaster: master      #modbus 485
-  - linksdk: master       #al_iot 依赖
-  - mbedtls: master       #al_iot 依赖
-  - netmgr: master        #al_iot 依赖
-  - lwip: master          #al_iot 依赖
-  - uservice: master      #al_iot 依赖
-  - wifi: master          #al_iot 依赖
+  - osal_aos: master
+  - mbmaster: master   #modbus
+  
+  - linksdk: master    #aliot
+  - mbedtls: master    #aliot
+  
+  - netmgr: master     #wifi网络
+  - lwip: master
+  - sntp: master
+  - uservice: master
+  - wifi: master
+  - posix: master      #wifi网络
+ 
+
   - haas100:  master
 supported_boards:
   - haas100: master

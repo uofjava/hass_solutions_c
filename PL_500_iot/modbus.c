@@ -18,44 +18,27 @@ mb_handler_t *mb_master;
 #define Y_ADDR                  (0x1c20)/*字读取Y输出首地址 M7200~M7295 */
 #define Y_len                   96       /*0~7、10~17、20~27、30~37 */
 #define M7000_ADDR              (0x1b58)/*字读取M7000数据地址 */
-#define M_len                   96       /*M7000~M7007*/ 
+#define M_len                   96       /*M7000~M7095  6*2*8=96位 */ 
 #define D7000_ADDR              (0x1b58)/*字读取D7000保存地址 */
-#define D_len                   12       /*D7000~D7009*/ 
+#define D_len                   12       /*D7000~D70011*/ 
 extern aos_queue_t queue_handle;
+extern aos_task_t al_task;
 extern int MESSAGE_MAX_LENGTH;
-uint8_t    message_buf[50];
+extern int isStartALiotTask;
+uint8_t    message_buf[60];
 mb_status_t init_mb(){
     mb_status_t status;
     /**
      * @brief 
      * modbus主站初始化：串口号（hass100 1），波特率(19200),校验（偶校验），超时
      */
-    status = mbmaster_rtu_init(&mb_master,SERIAL_PORT,SERIAL_BAUD_RATE,MB_PAR_EVEN,40);
-    // printf("init mb init staturs is %d\n",status);
+    status = mbmaster_rtu_init(&mb_master,SERIAL_PORT,SERIAL_BAUD_RATE,MB_PAR_EVEN,20);
+    printf("init mb init staturs is %d\n",status);
     return status;
 }
 
-void recve_handler(uint8_t *buf, uint8_t len, int re){
-    int index = 0;
-    /* The register length on modbus is 16 bits */
-    switch (re)
-    {
-    case 0:
-        index = 0;
-        break;
-    case 1:
-        index = 12;
-        break;
-    case 2:
-        index = 24;
-        break;
-    case 3:
-        index = 36;
-        break;
-    default:
-        break;
-    }
-    for(int i = index; i < MESSAGE_MAX_LENGTH;i++){
+void recve_handler(uint8_t *buf, uint8_t len, int index){
+    for(int i = index; i < index+len; i++){
         message_buf[i] = buf[i - index];
     }
 }
@@ -65,64 +48,105 @@ int pl_500_modbus_main(int argc, char *argv[])
     int count = 0;
     int status = -1;
     uint8_t     len;
-    uint8_t     buf[D_len*2];
-    
+    uint8_t     D_buf[D_len*2];
+    uint8_t     M_buf[D_len/2];
+    uint8_t     X_buf[D_len/2];
+    uint8_t     Y_buf[D_len/2];
     printf("modbus here!\r\n");
     status = init_mb();
     while (1) {
         if(status == MB_SUCCESS){
+            memset(M_buf, 0, D_len/2);
             /**
              * @brief 
              * M7000输入读取
              */
             status = mbmaster_read_coils(mb_master, DEVICE1_SLAVE_ADDR_1, M7000_ADDR,
-                                                 M_len, buf, &len, AOS_WAIT_FOREVER);
+                                                 M_len, M_buf, &len, AOS_NO_WAIT);
             if (status == MB_SUCCESS) {
+                //读取两次，M_buf为上次的值
+                aos_msleep(20);
+                status = mbmaster_read_coils(mb_master, DEVICE1_SLAVE_ADDR_1, M7000_ADDR,
+                                                 M_len, M_buf, &len, AOS_NO_WAIT);
+                if (status == MB_SUCCESS) {
+                    printf("copy M Vale\r\n");
+                    recve_handler(M_buf,12,0);
+                } else {
+                    printf("M read holding register error\n");
+                }
                 
-                recve_handler(buf,len,0);
             } else {
-                printf("read holding register error\n");
+                printf("M read holding register error\n");
             }
+            memset(X_buf, 0, D_len/2);
             /**
              * @brief 
              * X输入读取
              */
             status = mbmaster_read_coils(mb_master, DEVICE1_SLAVE_ADDR_1, X_ADDR,
-                                                 M_len, buf, &len, AOS_WAIT_FOREVER);
+                                                 X_len, X_buf, &len, AOS_NO_WAIT);
             if (status == MB_SUCCESS) {
-                recve_handler(buf,len,1);
+                aos_msleep(20);
+                status = mbmaster_read_coils(mb_master, DEVICE1_SLAVE_ADDR_1, X_ADDR,
+                                                 X_len, X_buf, &len, AOS_NO_WAIT);
+                if (status == MB_SUCCESS) {
+                    recve_handler(X_buf,12,12);
+                } else {
+                    printf("X read holding register error\n");
+                }
             } else {
-                printf("read holding register error\n");
+                printf("X read holding register error\n");
             }
+            memset(Y_buf, 0, D_len/2);
             /**
              * @brief 
              * Y输入读取
              */
             status = mbmaster_read_coils(mb_master, DEVICE1_SLAVE_ADDR_1, Y_ADDR,
-                                                 Y_len, buf, &len, AOS_WAIT_FOREVER);
+                                                 Y_len, Y_buf, &len, AOS_NO_WAIT);
             if (status == MB_SUCCESS) {
-                recve_handler(buf,len,2);
+                aos_msleep(20);
+                status = mbmaster_read_coils(mb_master, DEVICE1_SLAVE_ADDR_1, Y_ADDR,
+                                                 Y_len, Y_buf, &len, AOS_NO_WAIT);
+                if (status == MB_SUCCESS) {
+                    recve_handler(Y_buf,12,24);
+                } else {
+                    printf("Y read holding register error\n");
+                }
             } else {
-                printf("read holding register error\n");
+                printf("Y read holding register error\n");
             }
-            
+            memset(D_buf, 0, D_len*2);
             /**
              * @brief 
              * D7000输入读取
              */
             status = mbmaster_read_holding_registers(mb_master, DEVICE1_SLAVE_ADDR_1, D7000_ADDR,
-                                                 D_len, buf, &len, AOS_WAIT_FOREVER);
+                                                 D_len, D_buf, &len, AOS_NO_WAIT);
             if (status == MB_SUCCESS) {
-                recve_handler(buf,len,3);
+                aos_msleep(20);
+                status = mbmaster_read_holding_registers(mb_master, DEVICE1_SLAVE_ADDR_1, D7000_ADDR,
+                                                 D_len, D_buf, &len, AOS_NO_WAIT);
+                if (status == MB_SUCCESS) {
+                    recve_handler(D_buf,24,36);
+                } else {
+                    printf("D read holding register error\n");
+                }
             } else {
-                printf("read holding register error\n");
+                printf("D read holding register error\n");
             }
+            // for (size_t i = 0; i < 60; i++)
+            // {
+            //     /* code */
+            //     printf("%d,",message_buf[i]);
+            // }
+            // printf("\r\n");
             status = aos_queue_send(&queue_handle, (void *)message_buf, sizeof(message_buf));
             if (status != 0) {
-                printf("[%s]send buf queue error\r\n", "pl_500_modbus ");
+                printf("[%s]send buf  queue error :%d \r\n", "pl_500_modbus ",status);
             }
             status = MB_SUCCESS;
         }
-        aos_msleep(10);
+        // aos_msleep(5000);
     };
 }

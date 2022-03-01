@@ -75,7 +75,7 @@ void *demo_mqtt_process_thread(void *args)
         if (res == STATE_USER_INPUT_EXEC_DISABLED) {
             break;
         }
-        aos_msleep(1000);
+        // printf("demo_mqtt_process_thread\r\n");
     }
     return NULL;
 }
@@ -91,8 +91,8 @@ void *demo_mqtt_recv_thread(void *args)
             if (res == STATE_USER_INPUT_EXEC_DISABLED) {
                 break;
             }
-            aos_msleep(1000);
         }
+        // printf("demo_mqtt_recv_thread\r\n");
     }
     return NULL;
 }
@@ -100,7 +100,7 @@ void *demo_mqtt_recv_thread(void *args)
 /* 用户数据接收处理回调函数 */
 static void demo_dm_recv_handler(void *dm_handle, const aiot_dm_recv_t *recv, void *userdata)
 {
-    // printf("demo_dm_recv_handler, type = %d\r\n", recv->type);
+    printf("demo_dm_recv_handler, type = %d\r\n", recv->type);
 
     switch (recv->type) {
         /* 属性上报, 事件上报, 获取期望属性值或者删除期望属性值的应答 */
@@ -177,16 +177,21 @@ int32_t demo_send_delete_desred_requset(void *dm_handle)
     return aiot_dm_send(dm_handle, &msg);
 }
 
-/**
- * @brief 获取三菱M地址对应的值
- * 
- * @param maddr 
- * @return int32_t 
- */
-int32_t getMXXXValue(uint16_t *recv int maddr){
-    printf()
-}
 
+int haxTobin(uint8_t value,int index){
+    // printf("value sizeof: %d ,%x \r\n",value>>1, value);
+    unsigned mask = 1u <<7;
+    int d = 0;
+    for(int i =0;mask; i++,(mask >>=1)){
+        d = value & mask?1:0;
+        if((7-index) == i){
+            // printf("get data %d\r\n",d);
+            return d;
+        }
+    }
+    return -1;
+}
+    
 int al_iot_main(int argc, char *argv[])
 {
     int32_t     res = STATE_SUCCESS;
@@ -199,8 +204,8 @@ int al_iot_main(int argc, char *argv[])
 
     /* TODO: 替换为自己设备的三元组 */
     char *product_key       = "gic7M0DT51b";
-    char *device_name       = "light1";
-    char *device_secret     = "f769c952a139fe3d4f8b4b173303c2aa";
+    char *device_name       = "PL_500_test";
+    char *device_secret     = "5836a1c5b1f1be9554c8c084d9cd109c";
 
     /* 配置SDK的底层依赖 */
     aiot_sysdep_set_portfile(&g_aiot_sysdep_portfile);
@@ -280,56 +285,60 @@ int al_iot_main(int argc, char *argv[])
     size_t        rev_size = 0;
     uint32_t      i;
     aos_status_t  status;
-    uint16_t      *register_buf;
     /* 主循环进入休眠 */
     while (1) {
         /* TODO: 以下代码演示了简单的属性上报和事件上报, 用户可取消注释观察演示效果 */
         status = aos_queue_recv(&queue_handle, AOS_WAIT_FOREVER, (void *)message_buf, &rev_size);
         if (status == 0) {
             /* show message data */
-            // printf("[%s] %d recv message : ", "al_iot:", rev_size);
-            register_buf = (uint16_t *)message_buf;
-            getMXXXValue(register_buf,1);
-            char *send_alio_data = (char *)calloc(1000,sizeof(char));
+            printf("[%s] %d recv message \r\n", "al_iot:", rev_size);
+            char *send_alio_data = (char *)calloc(400,sizeof(char));
             strcat(send_alio_data,"{");
             for (i = 0; i < rev_size /2; i++) {
                 char d [10];
-                sprintf(d,"\"%d\": %d,",i,register_buf[i]);
+                sprintf(d,"\"%d\": %d,",i, message_buf[2*i] + message_buf[2*i+1]*256);
                 strcat(send_alio_data,d);
+                // printf("index :%d,value %d \r\n",i, (message_buf[2*i] + message_buf[2*i+1]*256));
             }
-
-            // 添加上下气缸报警
+            // 添加上下气缸报警M7000
             char d [10];
-            sprintf(d,"\"25\": %d,",1);
+            sprintf(d,"\"30\": %d,",haxTobin(message_buf[0],0));
             strcat(send_alio_data,d);
-            // 添加掉料停止报警
-            sprintf(d,"\"26\": %d,",1);
+            //添加掉料停止报警M7001
+            sprintf(d,"\"31\": %d,",haxTobin(message_buf[0],1));
             strcat(send_alio_data,d);
-            // 添加移动限位报警
-            sprintf(d,"\"27\": %d,",1);
+            // 添加移动限位报警M7002
+            sprintf(d,"\"32\": %d,",haxTobin(message_buf[0],2));
             strcat(send_alio_data,d);
-            // 添加伺服驱动报警
-            sprintf(d,"\"28\": %d,",1);
+            // 添加伺服驱动报警M7003
+            sprintf(d,"\"33\": %d,",haxTobin(message_buf[0],3));
             strcat(send_alio_data,d);
-            // 添加启动
-            sprintf(d,"\"29\": %d,",1);
+            // 添加启动M7116 M7100~M7115:2个字，
+            sprintf(d,"\"34\": %d,",haxTobin(message_buf[14],0));
             strcat(send_alio_data,d);
-            // 添加停止
-            sprintf(d,"\"30\": %d,",1);
+            // 添加停止M7117 M7100~M7115:1 M7117
+            sprintf(d,"\"35\": %d,",haxTobin(message_buf[14],1));
             strcat(send_alio_data,d);
-            // 添加急停
-            sprintf(d,"\"31\": %d,",1);
+            // 添加急停M7118 M7100~M7115:1 M7118
+            sprintf(d,"\"36\": %d,",haxTobin(message_buf[14],2));
             strcat(send_alio_data,d);
-            // 添加产量
-            sprintf(d,"\"32\": %d",1);
+            //添加故障M7215
+            sprintf(d,"\"37\": %d,",haxTobin(message_buf[25],7));
+            strcat(send_alio_data,d);
+            // 添加产量 D7000
+            sprintf(d,"\"38\": %d",message_buf[2*18] + message_buf[2*18+1]*256);
             strcat(send_alio_data,d);
             strcat(send_alio_data, "}");
             demo_send_property_post(dm_handle, send_alio_data);
+             //释放内存
+            aos_free(send_alio_data);
+            // send_alio_data = NULL;
         } else {
             printf("[%s]recv buf queue error\n", "al_iot:");
         }
-        aos_msleep(10);
+        // aos_msleep(5000);
     }
+    
     return 0;
 }
 

@@ -19,10 +19,10 @@ mb_handler_t *mb_master;
 #define DEVICE1_SLAVE_ADDR_1    (0x1)  /* 从站站号 */
 #define X_ADDR                  (0x3400)/*字读取X输入首地址 */ 
 #define X_len                   56       /*3GA-60MR:0~7、10~17、20~27、30~37、40~47、50~57、60~67、70~77*/
-#define Y_ADDR                  (0x3300)/*字读取Y输出首地址 */
-#define Y_len                   28       /*0~7、10~17、20~27、30~37 */
+#define Y_ADDR                  (0x1b58)/*字读取Y输出首地址 */
+#define Y_len                   96       /*0~7、10~17、20~27、30~37 */
 #define M7000_ADDR              (0x1b58)/*字读取M7000数据地址 */
-#define M_len                   8       /*M7000~M7007*/ 
+#define M_len                   56       /*M7000~M7007*/ 
 #define D7000_ADDR              (0x1b58)/*字读取D7000保存地址 */
 #define D_len                   10       /*D7000~D7009*/ 
 mb_status_t init_mb(){
@@ -31,18 +31,39 @@ mb_status_t init_mb(){
      * @brief 
      * modbus主站初始化：串口号（hass100 1），波特率(9600),校验（偶校验），超时
      */
-    status = mbmaster_rtu_init(&mb_master,SERIAL_PORT,SERIAL_BAUD_RATE,MB_PAR_EVEN,500);
+    status = mbmaster_rtu_init(&mb_master,SERIAL_PORT,SERIAL_BAUD_RATE,MB_PAR_EVEN,50);
     printf("init mb init staturs is %d\n",status);
     return status;
 }
 
-void recve_handler(uint8_t *buf,uint8_t len){
-    uint16_t   *register_buf;
-    /* The register length on modbus is 16 bits */
-    for(int index = 0; index<len;index++){
-        register_buf = (uint16_t *)buf[index];
-        printf("read X value index:%d H:%d L:%d\n",index,register_buf[0],register_buf[1]);
+int wordTobin(uint8_t value,int index){
+    // printf("value sizeof: %d ,%x \r\n",value>>1, value);
+    unsigned mask = 1u <<7;
+    int d =0;
+    for(int i =0;mask; i++,(mask >>=1)){
+        printf("%d, ", value & mask?1:0);
+        // d = value & mask?1:0;
     }
+    printf("\r\n");
+    printf("\r\n");
+    return -1;
+}
+
+void recve_handler(uint8_t *buf,uint8_t len){
+    // uint16_t   *register_buf;
+    // /* The register length on modbus is 16 bits */
+    // for(int index = 0; index<len;index++){
+    //     register_buf = (uint16_t *)buf[index];
+    //     printf("read X value index:%d H:%d L:%d\n",index,register_buf[0],register_buf[1]);
+    // }
+    for (size_t i = 0; i < len; i++)
+    {
+        /* code */
+        printf("data %d",buf[i]);
+    }
+    wordTobin(buf[0],0);
+    
+    printf("......\r\n");
 }
 
 int application_start(int argc, char *argv[])
@@ -60,14 +81,14 @@ int application_start(int argc, char *argv[])
              * @brief 
              * X输入读取
              */
-            status = mbmaster_read_coils(mb_master, DEVICE1_SLAVE_ADDR_1, X_ADDR,
-                                                 M_len, buf, &len, AOS_WAIT_FOREVER);
-            if (status == MB_SUCCESS) {
-                recve_handler(buf,len);
-            } else {
-                printf("read holding register error\n");
-                status = MB_SUCCESS;
-            }
+            // status = mbmaster_read_coils(mb_master, DEVICE1_SLAVE_ADDR_1, Y_ADDR,
+            //                                      Y_len, buf, &len, AOS_WAIT_FOREVER);
+            // if (status == MB_SUCCESS) {
+            //     recve_handler(buf,len);
+            // } else {
+            //     printf("X read holding register error :%d\n",status);
+            // }
+            aos_msleep(20);
             /**
              * @brief 
              * Y输入读取
@@ -77,21 +98,9 @@ int application_start(int argc, char *argv[])
             if (status == MB_SUCCESS) {
                 recve_handler(buf,len);
             } else {
-                printf("read holding register error\n");
-                status = MB_SUCCESS;
+                printf("M read holding register error :%d\n",status);
             }
-            /**
-             * @brief 
-             * M7000输入读取
-             */
-            status = mbmaster_read_coils(mb_master, DEVICE1_SLAVE_ADDR_1, M7000_ADDR,
-                                                 M_len, buf, &len, AOS_WAIT_FOREVER);
-            if (status == MB_SUCCESS) {
-                recve_handler(buf,len);
-            } else {
-                printf("read holding register error\n");
-                status = MB_SUCCESS;
-            }
+            aos_msleep(20);
             /**
              * @brief 
              * M7000输入读取
@@ -101,10 +110,10 @@ int application_start(int argc, char *argv[])
             if (status == MB_SUCCESS) {
                 recve_handler(buf,len);
             } else {
-                printf("read holding register error\n");
-                status = MB_SUCCESS;
+                printf("D read holding register error :%d\n",status);
             }
         }
+        status = MB_SUCCESS;
         printf("hello world! count %d \r\n", count++);
         aos_msleep(5000);
     };

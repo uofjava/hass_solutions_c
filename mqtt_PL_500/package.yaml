@@ -17,7 +17,7 @@ depends:
   - init: master
   - cli: master
   - osal_aos: master
-  - haas100: master
+  - haas100:  master
 supported_boards:
   - haas100: master
   - haas200: master
