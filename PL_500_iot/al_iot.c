@@ -185,7 +185,7 @@ int haxTobin(uint8_t value,int index){
     for(int i =0;mask; i++,(mask >>=1)){
         d = value & mask?1:0;
         if((7-index) == i){
-            // printf("get data %d\r\n",d);
+            // printf("get data %d index %d\r\n",d, 7-index);
             return d;
         }
     }
@@ -296,7 +296,7 @@ int al_iot_main(int argc, char *argv[])
             strcat(send_alio_data,"{");
             for (i = 0; i < rev_size /2; i++) {
                 char d [10];
-                sprintf(d,"\"%d\": %d,",i, message_buf[2*i] + message_buf[2*i+1]*256);
+                sprintf(d,"\"%d\": %d,",i, message_buf[2*i]*256 + message_buf[2*i+1]);
                 strcat(send_alio_data,d);
                 // printf("index :%d,value %d \r\n",i, (message_buf[2*i] + message_buf[2*i+1]*256));
             }
@@ -326,7 +326,7 @@ int al_iot_main(int argc, char *argv[])
             sprintf(d,"\"37\": %d,",haxTobin(message_buf[25],7));
             strcat(send_alio_data,d);
             // 添加产量 D7000
-            sprintf(d,"\"38\": %d",message_buf[2*18] + message_buf[2*18+1]*256);
+            sprintf(d,"\"38\": %d",message_buf[2*18]*256 + message_buf[2*18+1]);
             strcat(send_alio_data,d);
             strcat(send_alio_data, "}");
             demo_send_property_post(dm_handle, send_alio_data);
@@ -336,7 +336,7 @@ int al_iot_main(int argc, char *argv[])
         } else {
             printf("[%s]recv buf queue error\n", "al_iot:");
         }
-        // aos_msleep(5000);
+        aos_msleep(20);
     }
     
     return 0;

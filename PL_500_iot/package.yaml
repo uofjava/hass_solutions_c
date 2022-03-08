@@ -17,19 +17,15 @@ depends:
   - init: master
   - cli: master
   - osal_aos: master
-  - mbmaster: master   #modbus
-  
-  - linksdk: master    #aliot
-  - mbedtls: master    #aliot
-  
-  - netmgr: master     #wifi网络
+  - mbmaster: master
+  - linksdk: master
+  - mbedtls: master
+  - netmgr: master
   - lwip: master
   - sntp: master
   - uservice: master
   - wifi: master
-  - posix: master      #wifi网络
- 
-
+  - posix: master
   - haas100:  master
 supported_boards:
   - haas100: master
@@ -118,8 +114,9 @@ solution:
 source_file:
   - "maintask.c"
   - "main.c"
-  - "modbus.c"
+  # - "modbus.c"
   - "al_iot.c"
+  - "modbus_hass.c"
 
 ## 第五部分：配置信息
 # def_config:                              # 组件的可配置项
