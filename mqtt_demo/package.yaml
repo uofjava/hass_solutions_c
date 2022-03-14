@@ -16,12 +16,16 @@ type: solution                                      # <必选项> 组件类型�
 depends:
   - init: master
   - cli: master
+  - osal_aos: master
+  - mbmaster: master
+  - mqtt: master
+  - mbedtls: master
   - netmgr: master
   - lwip: master
+  - sntp: master
   - uservice: master
   - wifi: master
-  - mqtt: master
-  - osal_aos: master
+  - posix: master
   - haas100:  master
 supported_boards:
   - haas100: master

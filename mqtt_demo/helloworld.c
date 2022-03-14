@@ -56,6 +56,9 @@ int application_start(int argc, char *argv[])
     printf("nano entry here!\r\n");
 
     aos_set_log_level(AOS_LL_DEBUG);
+
+
+    
     event_service_init(NULL);
 
     netmgr_service_init(NULL);

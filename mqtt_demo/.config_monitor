@@ -1,0 +1,4 @@
+{
+    "serialport": "COM12",
+    "baudrate": "1500000"
+}
