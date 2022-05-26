@@ -7,6 +7,7 @@
 #include "aiot_sysdep_api.h"
 #include "aiot_mqtt_api.h"
 #include "aiot_dm_api.h"
+#include <cJSON.h>
 
 /* 位于portfiles/aiot_port文件夹下的系统适配函数集合 */
 extern aiot_sysdep_portfile_t g_aiot_sysdep_portfile;
@@ -19,7 +20,12 @@ static uint8_t g_mqtt_recv_thread_running = 0;
 
 extern aos_queue_t queue_handle;
 extern aos_queue_t queue_handle_iot_down;
+uint8_t    iot_message_buf[6] = {0x01,0x06,0x00,0x00,0x00,0x00};
+uint8_t adress[2];
+uint8_t data_value[2];
 extern int MESSAGE_MAX_LENGTH;
+
+
 
 /* TODO: 如果要关闭日志, 就把这个函数实现为空, 如果要减少日志, 可根据code选择不打印
  *
@@ -102,7 +108,8 @@ void *demo_mqtt_recv_thread(void *args)
 static void demo_dm_recv_handler(void *dm_handle, const aiot_dm_recv_t *recv, void *userdata)
 {
     printf("demo_dm_recv_handler, type = %d\r\n", recv->type);
-
+    cJSON *params = NULL;
+   
     switch (recv->type) {
         /* 属性上报, 事件上报, 获取期望属性值或者删除期望属性值的应答 */
         // case AIOT_DMRECV_GENERIC_REPLY: {
@@ -122,6 +129,37 @@ static void demo_dm_recv_handler(void *dm_handle, const aiot_dm_recv_t *recv, vo
                    (unsigned long)recv->data.property_set.msg_id,
                    recv->data.property_set.params_len,
                    recv->data.property_set.params);
+            params = cJSON_Parse(recv->data.property_set.params);
+            if (params == NULL) {
+                const char *error_ptr = cJSON_GetErrorPtr();
+                if (error_ptr != NULL)
+                    printf(stderr, "Error before: %s\n", error_ptr);
+
+                cJSON_Delete(params);
+                break;
+            }  
+            adress[0] =  atoi(params->child->string);
+            adress[1] =  atoi(params->child->string) >> 8;
+            data_value[0] = params->child->valueint;
+            data_value[1] = params->child->valueint >> 8;
+            
+            // printf("index: %d, data:%d\r\n",index,data_value);
+            if( (atoi(params->child->string) > 17) &&  (atoi(params->child->string) < 30)){
+                iot_message_buf[1] = 0x06;
+                iot_message_buf[2] = adress[1];
+                iot_message_buf[3] = adress[0];
+                iot_message_buf[4] = data_value[1];
+                iot_message_buf[5] = data_value[0];
+            }
+            printf("%o,%o,%o,%o, \r\n",adress[0],adress[1],data_value[0],data_value[1]);
+          
+            aos_status_t status = aos_queue_send(&queue_handle_iot_down, (void *)iot_message_buf, sizeof(iot_message_buf));
+            if (status != 0) {
+                printf("[%s]send iot buf  queue error :%d \r\n", "pl_500_iot ",status);
+            }
+
+            // printf("%s\r\n",params->child->string);
+            // printf("%d\r\n",params->child->valueint);
         }
         break;
         default:
@@ -211,7 +249,7 @@ int al_iot_main(int argc, char *argv[])
     /* 配置SDK的底层依赖 */
     aiot_sysdep_set_portfile(&g_aiot_sysdep_portfile);
     /* 配置SDK的日志输出 */
-    aiot_state_set_logcb(demo_state_logcb);
+    // aiot_state_set_logcb(demo_state_logcb);
 
     /* 创建SDK的安全凭据, 用于建立TLS连接 */
     memset(&cred, 0, sizeof(aiot_sysdep_network_cred_t));
@@ -286,10 +324,11 @@ int al_iot_main(int argc, char *argv[])
     size_t        rev_size = 0;
     uint32_t      i;
     aos_status_t  status;
+    
     /* 主循环进入休眠 */
     while (1) {
         /* TODO: 以下代码演示了简单的属性上报和事件上报, 用户可取消注释观察演示效果 */
-        status = aos_queue_recv(&queue_handle, AOS_WAIT_FOREVER, (void *)message_buf, &rev_size);
+        status = aos_queue_recv(&queue_handle, 10, (void *)message_buf, &rev_size);
         if (status == 0) {
             /* show message data */
             printf("[%s] %d recv message \r\n", "al_iot:", rev_size);

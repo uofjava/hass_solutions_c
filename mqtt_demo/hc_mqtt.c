@@ -11,6 +11,8 @@
 #include <sys/time.h>
 #include "led.h"
 
+
+
 Network n;
 MQTTClient c;
 unsigned char buf[2000];
@@ -18,7 +20,7 @@ unsigned char readbuf[2000];
 char *host = "192.168.3.113";  //使用mosquitto搭建的linux服务器
 short port = 1883;
 const char *subTopic = "test/aiot/sub_topic";
-const char *pubTopic = "test";
+const char *pubTopic = "028_2022";
 char clientId[150] = "haas";
 char username[65] = {"yyt"};
 char password[65] = {"yyt"};
@@ -75,15 +77,35 @@ int mqtt_main(int argc, char** argv)
 	initMMQTT();
 	int cnt = 0;
     unsigned int msgid = 0;
+	unsigned int prodeck = 0;
 	while (1)
 	{
 		// MQTTYield(&c, 5000);
-		aos_msleep(300);
-		char *send_alio_data = (char *)calloc(100,sizeof(char));
+		aos_msleep(3000);
+		char *send_alio_data = (char *)calloc(120,sizeof(char));
         strcat(send_alio_data,"{");
 		char d [30];
-		sprintf(d,"\"bar\": %d",msgid);
+		msgid = rand()%5 +1;
+		sprintf(d,"\"设备状态\": %d,",msgid);
 		strcat(send_alio_data,d);
+
+		sprintf(d,"\"异常\": %d,",0);
+		strcat(send_alio_data,d);
+		
+		sprintf(d,"\"异常类型\": \"气压\",");
+		strcat(send_alio_data,d);
+		
+
+		sprintf(d,"\"生产总数\": %d,",msgid);
+		strcat(send_alio_data,d);
+		
+
+		sprintf(d,"\"设备code\": \"028_1_%d\"",msgid);
+		strcat(send_alio_data,d);
+		
+
+
+
 		strcat(send_alio_data, "}");
 		MQTTMessage msg = {
 			QOS1,

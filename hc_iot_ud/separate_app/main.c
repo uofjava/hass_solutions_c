@@ -21,8 +21,10 @@ aos_queue_t queue_handle_iot_down;   /*物联网下发消息*/
 aos_task_t al_task;
 aos_task_t modbus_task;
 int MESSAGE_MAX_LENGTH = 60; /* X点12个字，Y点12个字，M点12个字，D点24个字*/
-static uint8_t queue_buffer[60 * 30]; /* for the internal buffer of the queue */
-static uint8_t queue_buffer_iot_down[4 * 5]; /*物联网下发数据：功能码，地址，数据 0x03, 0x00 0x00, 0x00 0x64*/
+int IOT_MESSAGE_MAX_LENGTH = 6; /* X点12个字，Y点12个字，M点12个字，D点24个字*/
+
+static uint8_t queue_buffer[60 * 20]; /* for the internal buffer of the queue */
+static uint8_t queue_buffer_iot[6 * 10]; /*物联网下发数据：站地址， 功能码，地址，数据 0x03, 0x00 0x00, 0x00 0x64*/
 
 
 bool isStartALiotTask = false;
@@ -44,8 +46,7 @@ static void pl_500_mb_func(void *data){
 static void creatQueue(){
     aos_status_t  status;
 
-    status = aos_queue_new(&queue_handle_iot_down, (void *)queue_buffer_iot_down, sizeof(queue_buffer_iot_down),
-                           4);
+    status = aos_queue_new(&queue_handle_iot_down, (void *)queue_buffer_iot, sizeof(queue_buffer_iot),IOT_MESSAGE_MAX_LENGTH);
     if (status != 0) {
         printf("[%s]create queue_handle_iot_down error\r\n", "pl_500");
         return;
@@ -61,7 +62,7 @@ static void creatQueue(){
 static void creatALiotTask(){
     aos_status_t ret;
     ret = aos_task_create(&al_task, "linksdk_demo", al_iot_func,
-                          NULL, NULL, 1024*8, AOS_DEFAULT_APP_PRI, AOS_TASK_AUTORUN);
+                          NULL, NULL, 1024*10, AOS_DEFAULT_APP_PRI, AOS_TASK_AUTORUN);
     if (ret < 0) {
         printf("create linksdk demo task failed, ret = %ld \r\n", ret);
     }
@@ -70,7 +71,7 @@ static void creatALiotTask(){
 static void creatModbusTask(){
     aos_status_t ret;
     ret = aos_task_create(&modbus_task, "modbus_demo", pl_500_mb_func,
-                          NULL, NULL, 1024*4, AOS_DEFAULT_APP_PRI, AOS_TASK_AUTORUN);
+                          NULL, NULL, 1024*6, AOS_DEFAULT_APP_PRI, AOS_TASK_AUTORUN);
     if (ret < 0) {
         printf("create modbus_demo task failed, ret = %ld \r\n", ret);
     }

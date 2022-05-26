@@ -31,7 +31,7 @@ mb_status_t init_mb(){
      * @brief 
      * modbus主站初始化：串口号（hass100 1），波特率(9600),校验（偶校验），超时
      */
-    status = mbmaster_rtu_init(&mb_master,SERIAL_PORT,SERIAL_BAUD_RATE,MB_PAR_EVEN,50);
+    status = mbmaster_rtu_init(&mb_master,SERIAL_PORT,SERIAL_BAUD_RATE,MB_PAR_NONE,50);
     printf("init mb init staturs is %d\n",status);
     return status;
 }
@@ -73,46 +73,70 @@ int application_start(int argc, char *argv[])
     uint8_t     len;
     uint8_t     buf[D_len*2];
     printf("nano entry here!\r\n");
-    
+     uint16_t    data_resp = 0;
     status = init_mb();
     while (1) {
-        if(status == MB_SUCCESS){
-            /**
-             * @brief 
-             * X输入读取
-             */
-            // status = mbmaster_read_coils(mb_master, DEVICE1_SLAVE_ADDR_1, Y_ADDR,
-            //                                      Y_len, buf, &len, AOS_WAIT_FOREVER);
-            // if (status == MB_SUCCESS) {
-            //     recve_handler(buf,len);
-            // } else {
-            //     printf("X read holding register error :%d\n",status);
-            // }
-            aos_msleep(20);
-            /**
-             * @brief 
-             * Y输入读取
-             */
-            status = mbmaster_read_coils(mb_master, DEVICE1_SLAVE_ADDR_1, Y_ADDR,
-                                                 Y_len, buf, &len, AOS_WAIT_FOREVER);
+        //三菱写入M 地址  OFF:0x00 0x00   ON: 0xFF 0x00                
+         status = mbmaster_write_single_coil(mb_master,DEVICE1_SLAVE_ADDR_1,0,count,NULL, &data_resp, NULL,AOS_NO_WAIT);
             if (status == MB_SUCCESS) {
-                recve_handler(buf,len);
+                if (count != data_resp) {
+                    printf( "write single register error\n");
+                } else {
+                    printf( "write single register ok\n");
+                }
             } else {
-                printf("M read holding register error :%d\n",status);
+                printf( "write single register error\n");
             }
-            aos_msleep(20);
-            /**
-             * @brief 
-             * M7000输入读取
-             */
-            status = mbmaster_read_holding_registers(mb_master, DEVICE1_SLAVE_ADDR_1, D7000_ADDR,
-                                                 D_len, buf, &len, AOS_WAIT_FOREVER);
+        //三菱写入D 地址 uint16
+        status = mbmaster_write_single_register(mb_master,DEVICE1_SLAVE_ADDR_1,0,count,NULL, &data_resp, NULL,AOS_NO_WAIT);
             if (status == MB_SUCCESS) {
-                recve_handler(buf,len);
+                if (count != data_resp) {
+                    printf( "write single register error\n");
+                } else {
+                    printf( "write single register ok\n");
+                }
             } else {
-                printf("D read holding register error :%d\n",status);
+                printf( "write single register error\n");
             }
-        }
+
+
+        // if(status == MB_SUCCESS){
+        //     /**
+        //      * @brief 
+        //      * X输入读取
+        //      */
+        //     // status = mbmaster_read_coils(mb_master, DEVICE1_SLAVE_ADDR_1, Y_ADDR,
+        //     //                                      Y_len, buf, &len, AOS_WAIT_FOREVER);
+        //     // if (status == MB_SUCCESS) {
+        //     //     recve_handler(buf,len);
+        //     // } else {
+        //     //     printf("X read holding register error :%d\n",status);
+        //     // }
+        //     aos_msleep(20);
+        //     /**
+        //      * @brief 
+        //      * Y输入读取
+        //      */
+        //     status = mbmaster_read_coils(mb_master, DEVICE1_SLAVE_ADDR_1, Y_ADDR,
+        //                                          Y_len, buf, &len, AOS_WAIT_FOREVER);
+        //     if (status == MB_SUCCESS) {
+        //         recve_handler(buf,len);
+        //     } else {
+        //         printf("M read holding register error :%d\n",status);
+        //     }
+        //     aos_msleep(20);
+        //     /**
+        //      * @brief 
+        //      * M7000输入读取
+        //      */
+        //     status = mbmaster_read_holding_registers(mb_master, DEVICE1_SLAVE_ADDR_1, D7000_ADDR,
+        //                                          D_len, buf, &len, AOS_WAIT_FOREVER);
+        //     if (status == MB_SUCCESS) {
+        //         recve_handler(buf,len);
+        //     } else {
+        //         printf("D read holding register error :%d\n",status);
+        //     }
+        // }
         status = MB_SUCCESS;
         printf("hello world! count %d \r\n", count++);
         aos_msleep(5000);
